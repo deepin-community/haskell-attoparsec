@@ -1,0 +1,14 @@
+Description:  Do not run test suite threaded, does not work on all arches.
+Author: Joachim Breitner <nomeata@debian.org>
+
+--- a/attoparsec.cabal
++++ b/attoparsec.cabal
+@@ -117,7 +117,7 @@
+                   Data.Attoparsec.Zepto
+ 
+   ghc-options:
+-    -Wall -threaded -rtsopts
++    -Wall -rtsopts
+ 
+   if flag(developer)
+     ghc-options: -Werror

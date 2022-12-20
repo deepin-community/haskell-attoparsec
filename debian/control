@@ -1,0 +1,72 @@
+Source: haskell-attoparsec
+Maintainer: Debian Haskell Group <pkg-haskell-maintainers@lists.alioth.debian.org>
+Uploaders: TANIGUCHI Takaki <takaki@debian.org>, Clint Adams <clint@debian.org>
+Priority: optional
+Section: haskell
+Rules-Requires-Root: no
+Build-Depends: debhelper (>= 10),
+ haskell-devscripts (>= 0.13),
+ cdbs,
+ ghc (>= 8.4.3),
+ ghc-prof,
+ libghc-scientific-dev (>= 0.3.1),
+ libghc-scientific-dev (<< 0.4),
+ libghc-scientific-prof,
+ libghc-quickcheck2-dev (>= 2.13.2),
+ libghc-quickcheck2-dev (<< 2.14),
+ libghc-quickcheck2-prof,
+ libghc-quickcheck-unicode-dev,
+ libghc-scientific-dev,
+ libghc-tasty-dev (>= 0.11),
+ libghc-tasty-quickcheck-dev (>= 0.8),
+ libghc-vector-dev,
+Build-Depends-Indep: ghc-doc,
+ libghc-scientific-doc,
+ libghc-semigroups-doc,
+Standards-Version: 4.4.0
+Homepage: https://github.com/bos/attoparsec
+Vcs-Browser: https://salsa.debian.org/haskell-team/DHG_packages/tree/master/p/haskell-attoparsec
+Vcs-Git: https://salsa.debian.org/haskell-team/DHG_packages.git [p/haskell-attoparsec]
+
+Package: libghc-attoparsec-dev
+Architecture: any
+Depends: ${haskell:Depends},
+ ${shlibs:Depends},
+ ${misc:Depends},
+Recommends: ${haskell:Recommends},
+Suggests: ${haskell:Suggests},
+Provides: ${haskell:Provides},
+Description: Fast combinator parsing for bytestrings${haskell:ShortBlurb}
+ A fast parser combinator library, aimed particularly at dealing
+ efficiently with network protocols and complicated text/binary
+ file formats.
+ .
+ ${haskell:Blurb}
+
+Package: libghc-attoparsec-prof
+Architecture: any
+Depends: ${haskell:Depends},
+ ${misc:Depends},
+Recommends: ${haskell:Recommends},
+Suggests: ${haskell:Suggests},
+Provides: ${haskell:Provides},
+Description: Fast combinator parsing for bytestrings${haskell:ShortBlurb}
+ A fast parser combinator library, aimed particularly at dealing
+ efficiently with network protocols and complicated text/binary
+ file formats.
+ .
+ ${haskell:Blurb}
+
+Package: libghc-attoparsec-doc
+Architecture: all
+Section: doc
+Depends: ${haskell:Depends},
+ ${misc:Depends},
+Recommends: ${haskell:Recommends},
+Suggests: ${haskell:Suggests},
+Description: Fast combinator parsing for bytestrings${haskell:ShortBlurb}
+ A fast parser combinator library, aimed particularly at dealing
+ efficiently with network protocols and complicated text/binary
+ file formats.
+ .
+ ${haskell:Blurb}
