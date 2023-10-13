@@ -121,6 +121,18 @@ takeWhile1 w s =
          PL.Done t' h' -> t === t' .&&. toStrictBS h === h'
          _             -> property False
 
+takeWhileIncluding :: Word8 -> L.ByteString -> Property
+takeWhileIncluding w s =
+    let s'    = L.cons w $ L.snoc s (w+1)
+        (h_,t_) = L.span (<=w) s'
+        (h,t) =
+          case L.uncons t_ of
+            Nothing -> (h_, t_)
+            Just (n, nt) -> (h_ `L.snoc` n, nt)
+    in w < 255 ==> case PL.parse (P.takeWhileIncluding (<=w)) s' of
+         PL.Done t' h' -> t === t' .&&. toStrictBS h === h'
+         _             -> property False
+
 takeTill :: Word8 -> L.ByteString -> Property
 takeTill w s =
     let (h,t) = L.break (==w) s
@@ -130,6 +142,19 @@ takeTill w s =
 
 takeWhile1_empty :: Property
 takeWhile1_empty = parseBS (P.takeWhile1 undefined) L.empty === Nothing
+
+getChunk :: L.ByteString -> Property
+getChunk s =
+  maybe (property False) (=== L.toChunks s) $
+    parseBS getChunks s
+  where getChunks = go []
+        go res = do
+          mchunk <- P.getChunk
+          case mchunk of
+            Nothing -> return (reverse res)
+            Just chunk -> do
+              _ <- P.take (B.length chunk)
+              go (chunk:res)
 
 endOfInput :: L.ByteString -> Property
 endOfInput s = parseBS P.endOfInput s === if L.null s
@@ -181,6 +206,8 @@ tests = [
     , testProperty "takeWhile" takeWhile
     , testProperty "takeWhile1" takeWhile1
     , testProperty "takeWhile1_empty" takeWhile1_empty
+    , testProperty "takeWhileIncluding" takeWhileIncluding
+    , testProperty "getChunk" getChunk
     , testProperty "word8" word8
     , testProperty "members" members
     , testProperty "nonmembers" nonmembers

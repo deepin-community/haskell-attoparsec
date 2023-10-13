@@ -66,7 +66,9 @@ module Data.Attoparsec.ByteString
     , I.runScanner
     , I.takeWhile
     , I.takeWhile1
+    , I.takeWhileIncluding
     , I.takeTill
+    , I.getChunk
 
     -- ** Consume all remaining input
     , I.takeByteString
