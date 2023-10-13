@@ -53,7 +53,9 @@ module Data.Attoparsec.ByteString.Internal
     , runScanner
     , takeWhile
     , takeWhile1
+    , takeWhileIncluding
     , takeTill
+    , getChunk
 
     -- ** Consume all remaining input
     , takeByteString
@@ -75,6 +77,7 @@ import Data.Attoparsec.ByteString.Buffer (Buffer, buffer)
 import Data.Attoparsec.ByteString.FastSet (charClass, memberWord8)
 import Data.Attoparsec.Combinator ((<?>))
 import Data.Attoparsec.Internal
+import Data.Attoparsec.Internal.Compat
 import Data.Attoparsec.Internal.Fhthagn (inlinePerformIO)
 import Data.Attoparsec.Internal.Types hiding (Parser, Failure, Success)
 import Data.ByteString (ByteString)
@@ -276,6 +279,46 @@ takeWhileAcc p = go
       else return $ concatReverse (s:acc)
 {-# INLINE takeWhileAcc #-}
 
+-- | Consume input until immediately after the predicate returns 'True', and return
+-- the consumed input.
+--
+-- This parser will consume at least one 'Word8' or fail.
+takeWhileIncluding :: (Word8 -> Bool) -> Parser B.ByteString
+takeWhileIncluding p = do
+  (s', t) <- B8.span p <$> get
+  case B8.uncons t of
+    -- Since we reached a break point and managed to get the next byte,
+    -- input can not have been exhausted thus we succed and advance unconditionally.
+    Just (h, _) -> do
+      let s = s' `B8.snoc` h
+      advance (B8.length s)
+      return s
+    -- The above isn't true so either we ran out of input or we need to process the next chunk.
+    Nothing -> do
+      continue <- inputSpansChunks (B8.length s')
+      if continue
+        then takeWhileIncAcc p [s']
+        -- Our spec says that if we run out of input we fail.
+        else fail "takeWhileIncluding reached end of input"
+{-# INLINE takeWhileIncluding #-}
+
+takeWhileIncAcc :: (Word8 -> Bool) -> [B.ByteString] -> Parser B.ByteString
+takeWhileIncAcc p = go
+ where
+   go acc = do
+     (s', t) <- B8.span p <$> get
+     case B8.uncons t of
+       Just (h, _) -> do
+         let s = s' `B8.snoc` h
+         advance (B8.length s)
+         return (concatReverse $ s:acc)
+       Nothing -> do
+         continue <- inputSpansChunks (B8.length s')
+         if continue
+           then go (s':acc)
+           else fail "takeWhileIncAcc reached end of input"
+{-# INLINE takeWhileIncAcc #-}
+
 takeRest :: Parser [ByteString]
 takeRest = go []
  where
@@ -296,6 +339,17 @@ takeByteString = B.concat `fmap` takeRest
 takeLazyByteString :: Parser L.ByteString
 takeLazyByteString = L.fromChunks `fmap` takeRest
 
+-- | Return the rest of the current chunk without consuming anything.
+--
+-- If the current chunk is empty, then ask for more input.
+-- If there is no more input, then return 'Nothing'
+getChunk :: Parser (Maybe ByteString)
+getChunk = do
+  input <- wantInput
+  if input
+    then Just <$> get
+    else return Nothing
+
 data T s = T {-# UNPACK #-} !Int s
 
 scan_ :: (s -> [ByteString] -> Parser r) -> s -> (s -> Word8 -> Maybe s)
@@ -303,7 +357,7 @@ scan_ :: (s -> [ByteString] -> Parser r) -> s -> (s -> Word8 -> Maybe s)
 scan_ f s0 p = go [] s0
  where
   go acc s1 = do
-    let scanner (B.PS fp off len) =
+    let scanner bs = withPS bs $ \fp off len ->
           withForeignPtr fp $ \ptr0 -> do
             let start = ptr0 `plusPtr` off
                 end   = start `plusPtr` len
